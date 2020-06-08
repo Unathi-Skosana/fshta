@@ -13,7 +13,8 @@ set -g __fish_git_prompt_hide_untrackedfiles 1
 set -g __fish_git_prompt_hide_dirtystate 1
 set -g __fish_git_prompt_hide_stagedstate 1
 set -g __fish_git_prompt_showupstream none
-set -g __fish_git_prompt_color_dirtystate --bold brred
+set -g __fish_git_prompt_color_untrackedfiles --bold brred
+set -g __fish_git_prompt_color_dirtystate --bold yellow
 set -g __fish_git_prompt_color_cleanstate --bold green
 set -g __fish_git_prompt_color_stagedstate --bold yellow
 set -g __fish_git_prompt_color_upstream --bold cyan
