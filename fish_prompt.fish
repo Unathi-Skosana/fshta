@@ -11,7 +11,6 @@ set -g fish_prompt_pwd_dir_length 1
 set -g __fish_git_prompt_hide_untrackedfiles 1
 set -g __fish_git_prompt_hide_dirtystate 1
 set -g __fish_git_prompt_hide_stagedstate 1
-set -g __fish_git_prompt_hide_upstream 1
 set -g __fish_git_prompt_show_informative_status 1
 set -g __fish_git_prompt_showupstream "none"
 set -g __fish_git_prompt_color_untrackedfiles --bold brred
