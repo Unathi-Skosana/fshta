@@ -1,5 +1,7 @@
 # Fista
 
+![Fista](./preview.png)
+
 Minimal shell prompt based off pista by [NerdyPepper](https://github.com/NerdyPepper)
 
 Features
