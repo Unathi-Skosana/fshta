@@ -7,27 +7,6 @@
 # Shorten PWD
 set -g fish_prompt_pwd_dir_length 1
 
-# Git prompt
-set -g __fish_git_prompt_hide_untrackedfiles 1
-set -g __fish_git_prompt_hide_dirtystate 1
-set -g __fish_git_prompt_hide_stagedstate 1
-set -g __fish_git_prompt_show_informative_status 1
-set -g __fish_git_prompt_showupstream "none"
-set -g __fish_git_prompt_color_untrackedfiles --bold brred
-set -g __fish_git_prompt_color_dirtystate --bold yellow
-set -g __fish_git_prompt_color_cleanstate --bold green
-set -g __fish_git_prompt_color_stagedstate --bold yellow
-set -g __fish_git_prompt_color_upstream --bold cyan
-set -g __fish_git_prompt_color_branch --bold brblack
-
-# Git Characters
-set -g __fish_git_prompt_char_untrackedfiles ' × '
-set -g __fish_git_prompt_char_stateseparator ''
-set -g __fish_git_prompt_char_cleanstate ' · '
-set -g __fish_git_prompt_char_dirtystate ' × '
-set -g __fish_git_prompt_char_stagedstate ' ± '
-
-
 # disable venv default prompt
 set -g VIRTUAL_ENV_DISABLE_PROMPT 0
 
@@ -45,34 +24,16 @@ function _print_in_color
   set_color normal
 end
 
-function _prompt_color_for_status
-  if test $argv[1] -eq 0
-    echo brgreen
-  else
-    echo brred
-  end
-end
-
+# Error aware prompt character
 function _prompt_char_for_status
   if test $argv[1] -eq 0
-    _print_in_color "\n\e[1m▴\e[0m " brgreen
+    _print_in_color "\n\e[1m▲\e[0m " brgreen
   else
-    _print_in_color "\n\e[1m▾\e[0m " brred
+    _print_in_color "\n\e[1m▼\e[0m " brred
   end
 end
 
-
-if functions -q fish_right_prompt
-    if not functions -q __fish_right_prompt_orig
-        functions -c fish_right_prompt __fish_right_prompt_orig
-    end
-    functions -e fish_right_prompt
-else
-    function __fish_right_prompt_orig
-    end
-end
-
-
+# Virtual Env Prompt
 function fish_right_prompt
   if set -q VIRTUAL_ENV
     set -l venv (basename $VIRTUAL_ENV)
@@ -80,39 +41,99 @@ function fish_right_prompt
   end
 end
 
-if functions -q fish_prompt
-    if not functions -q __fish_prompt_orig
-        functions -c fish_prompt __fish_prompt_orig
-    end
-    functions -e fish_prompt
-else
-    function __fish_prompt_orig
-    end
+# Branch name
+function _git_branch_name
+  echo (command git symbolic-ref HEAD ^/dev/null | sed -e 's|^refs/heads/||')
 end
 
+# Modified 
+function _is_git_modified
+  echo (command git diff --exit-code)
+end
+
+# Untracked
+function _is_git_untracked
+  echo (command git ls-files --other --exclude-standard --directory)
+end
+
+# Untracked or unstaged
+function _is_git_dirty
+  echo (command git status -s --ignore-submodules=dirty ^/dev/null)
+end
+
+# Staged
+function _is_git_staged
+  echo (command git diff --cached --exit-code)
+end
 
 function fish_prompt
   # last status
   set -l last_status $status
 
-  # tasks count from t.py, NB: m and s are aliased commands to call t.py for
-  # two separate task lists
-  #
-  set -l  __tasks_symbol 'τ'
-  set -l  __tasks (math (m | wc -l | sed -e"s/ *//") + (s | wc -l | sed -e"s/ *//"))
-
   # Directory
   _print_in_color "\n"(prompt_pwd) brwhite
 
+  # tasks count from t.py, NB: m and s are aliased commands to call t.py for
+  # two separate task lists
+  #
+  set -l  _tasks_symbol 'τ'
+  set -l  _tasks (math (m | wc -l | sed -e"s/ *//") + (s | wc -l | sed -e"s/ *//"))
+
   # Tasks
-  if [ $__tasks != 0 ]
-    _print_in_color " $__tasks_symbol $__tasks" green
+  if [ $_tasks != 0 ]
+    _print_in_color " $_tasks_symbol $_tasks" green
   end
 
   # Git
-  __fish_git_prompt " %s"
+  set -l _git_untracked_symbol "×"
+  set -l _git_staged_symbol "±"
+  set -l _git_clean_symbol "·"
+  set -l _git_behind_upstream_symbol "-"
+  set -l _git_ahead_upstream_symbol "+"
+
+  if [ (_git_branch_name) ]
+    set -l git_branch (_git_branch_name)
+    _print_in_color " $git_branch" brgrey
+
+    if [ (_is_git_untracked) ]
+      _print_in_color " $_git_untracked_symbol" brred
+    end
+
+    if [ (_is_git_modified) ]
+      _print_in_color " $_git_untracked_symbol" bryellow
+    end
+
+    if [ (_is_git_staged) ]
+      _print_in_color " $_git_staged_symbol" bryellow
+    end
+
+    if [ -z (_is_git_dirty) ]
+      _print_in_color " $_git_clean_symbol" brgreen
+    end
+
+    set -l commits (command git rev-list --left-right '@{upstream}...HEAD' ^/dev/null)
+
+    if [ $status != 0 ]
+      _prompt_char_for_status $last_status
+      return
+    end
+
+    set -l behind (count (for arg in $commits; echo $arg; end | grep '^<'))
+    set -l ahead  (count (for arg in $commits; echo $arg; end | grep -v '^<'))
+    switch "$ahead $behind"
+      case ''     # no upstream
+      case '0 0'  # equal to upstream
+        _print_in_color '' white
+      case '* 0'  # ahead of upstream
+        _print_in_color " $_git_ahead_upstream_symbol" brblue
+      case '0 *'  # behind upstream
+        _print_in_color " $_git_behind_upstream_symbol" brred
+      case '*'    # diverged from upstream
+        _print_in_color " $_git_ahead_upstream_symbol" brblue
+        _print_in_color "$_git_ahead_upstream_symbol" brred
+    end
+  end
 
   # Prompt char
   _prompt_char_for_status $last_status
-  __fish_prompt_orig
 end
