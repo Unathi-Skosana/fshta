@@ -15,6 +15,7 @@ function fish_mode_prompt --description 'Displays the current mode'
   # Do nothing if not in vi mode
 end
 
+# util function for printing in color
 function _print_in_color
   set -l string $argv[1]
   set -l color  $argv[2]
@@ -33,7 +34,7 @@ function _prompt_char_for_status
   end
 end
 
-# Virtual Env Prompt
+# Virtual env prompt (mimick anaconda's virtual env prompt)
 function fish_right_prompt
   if set -q VIRTUAL_ENV
     set -l venv (basename $VIRTUAL_ENV)
@@ -46,7 +47,7 @@ function _git_branch_name
   echo (command git symbolic-ref HEAD ^/dev/null | sed -e 's|^refs/heads/||')
 end
 
-# Modified 
+# Modified
 function _is_git_modified
   echo (command git diff --exit-code)
 end
@@ -67,7 +68,7 @@ function _is_git_staged
 end
 
 function fish_prompt
-  # last status
+  # save last status
   set -l last_status $status
 
   # Directory
@@ -134,6 +135,5 @@ function fish_prompt
     end
   end
 
-  # Prompt char
   _prompt_char_for_status $last_status
 end
