@@ -1,6 +1,6 @@
-# Fista
+# Fshta
 
-![Fista](./preview.png)
+![Fshta](./preview.png)
 
 Minimal shell prompt based off pista by [NerdyPepper](https://github.com/NerdyPepper)
 
